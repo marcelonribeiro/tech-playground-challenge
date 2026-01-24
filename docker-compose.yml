@@ -1,0 +1,67 @@
+services:
+  web:
+    build: .
+    container_name: pin_people_web
+    command: flask run --host=0.0.0.0 --debug
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - pin_net
+
+  worker:
+    build: .
+    container_name: pin_people_worker
+    command: celery -A src.application.tasks.celery_worker.celery worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - pin_net
+
+  db:
+    image: postgres:17
+    container_name: pin_people_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pin_net
+
+  redis:
+    image: redis:alpine
+    container_name: pin_people_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - pin_net
+
+volumes:
+  postgres_data:
+
+networks:
+  pin_net:
+    driver: bridge
