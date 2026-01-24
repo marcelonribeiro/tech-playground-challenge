@@ -18,3 +18,7 @@ This project uses **PostgreSQL 17** containerized. The schema is designed with 3
    git clone <repo_url>
    cd tech-playground-challenge
    cp .env.example .env
+   
+
+docker-compose exec web flask db-init
+docker-compose exec web flask trigger-ingestion

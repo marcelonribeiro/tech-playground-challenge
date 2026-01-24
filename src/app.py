@@ -8,9 +8,14 @@ from src.application.tasks.background import async_ingest_data
 from src.interface.api.routes import api_bp
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
-    app.config.from_object(Config)
+    if test_config is None:
+        # Load from .env / config.py (Production/Dev)
+        app.config.from_object(Config)
+    else:
+        # Load from test_config passed by Pytest
+        app.config.from_mapping(test_config)
 
     # Initialize Extensions
     db.init_app(app)
@@ -25,6 +30,15 @@ def create_app():
         """Initialize the database (Create Tables)."""
         db.create_all()
         print("Database initialized successfully.")
+
+    @app.cli.command("ingest-csv")
+    @click.argument("file_path")
+    def ingest_csv(file_path):
+        try:
+            IngestionService.process_data(source_url=file_path, force_local=True)
+            print("Done.")
+        except Exception as e:
+            print(e)
 
     @app.cli.command("trigger-ingestion")
     def trigger_ingestion():
