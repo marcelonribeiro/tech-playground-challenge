@@ -37,7 +37,6 @@ jobs:
         FLASK_APP: src.app
         FLASK_DEBUG: 0
         SECRET_KEY: test_key
-        # CORREÇÃO AQUI: Aspas duplas para evitar erro de parser YAML
         DATABASE_URL: "sqlite:///:memory:"
         CELERY_BROKER_URL: "redis://localhost:6379/0"
         CELERY_RESULT_BACKEND: "redis://localhost:6379/0"

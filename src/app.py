@@ -1,10 +1,11 @@
 import click
 from flask import Flask
 from src.config import Config
-from src.extensions import db, celery
+from src.extensions import db, celery, migrate
 from src.domain.models import Employee, Survey, Response, Department
 from src.application.services.ingestion import IngestionService
 from src.application.tasks.background import async_ingest_data
+from src.application.tasks.ai_tasks import async_analyze_batch
 from src.interface.api.routes import api_bp
 
 
@@ -19,17 +20,12 @@ def create_app(test_config=None):
 
     # Initialize Extensions
     db.init_app(app)
+    migrate.init_app(app, db)
 
     # Configure Celery
     celery.conf.update(app.config)
 
     app.register_blueprint(api_bp)
-
-    @app.cli.command("db-init")
-    def db_init():
-        """Initialize the database (Create Tables)."""
-        db.create_all()
-        print("Database initialized successfully.")
 
     @app.cli.command("ingest-csv")
     @click.argument("file_path")
@@ -45,6 +41,14 @@ def create_app(test_config=None):
         """Triggers the Celery task to ingest data from GitHub."""
         task = async_ingest_data.delay()
         print(f"Task triggered! ID: {task.id}")
+
+    @app.cli.command("trigger-ai")
+    def trigger_ai():
+        """Triggers the AI Sentiment Analysis Batch Job."""
+        print("Triggering AI Analysis background task...")
+        task = async_analyze_batch.delay()
+        print(f"Task started! ID: {task.id}")
+        print("Check worker logs for progress.")
 
     # Healthcheck
     @app.route('/health')

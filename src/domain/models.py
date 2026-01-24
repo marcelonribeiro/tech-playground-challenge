@@ -111,11 +111,26 @@ class Response(db.Model):
     enps_comment = db.Column(db.Text)
 
     # AI & Metadata
-    # INDEX: For filtering sentiment in dashboards
-    sentiment_score = db.Column(db.Float, nullable=True)
-    sentiment_label = db.Column(db.String(20), nullable=True, index=True)
+    sentiments = db.relationship('ResponseSentiment', backref='response', lazy='dynamic')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<Response Emp:{self.employee_id} Survey:{self.survey_id}>'
+
+
+class ResponseSentiment(db.Model):
+    """
+    Stores granular sentiment analysis for each comment field in a response.
+    Example: field_name='enps_comment', label='NEGATIVE', score=0.98
+    """
+    __tablename__ = 'response_sentiments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    response_id = db.Column(db.Integer, db.ForeignKey('responses.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    field_name = db.Column(db.String(50), nullable=False)
+    sentiment_label = db.Column(db.String(20), nullable=False)
+    sentiment_score = db.Column(db.Float, nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

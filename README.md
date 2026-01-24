@@ -20,5 +20,9 @@ This project uses **PostgreSQL 17** containerized. The schema is designed with 3
    cp .env.example .env
    
 
-docker-compose exec web flask db-init
 docker-compose exec web flask trigger-ingestion
+
+docker-compose exec web pytest --cov=src --cov-report=term-missing tests/
+
+# local
+set DATABASE_URL=postgresql://pinuser:pinpassword@localhost:5432/pindb
