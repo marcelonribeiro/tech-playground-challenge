@@ -207,3 +207,327 @@ def company_view():
             'user_radar': {'labels': ai_radar_labels, 'data': user_radar_values}
         }
     )
+
+
+@web_bp.route('/areas')
+def areas_view():
+    """
+    Task 7 Refined: Area Level Visualization.
+    Features:
+    1. Dynamic Comparative Chart: User selects specific metric (e.g., 'Learning') to benchmark across departments.
+    2. Deep Dive: Department specific eNPS and Dual Radar analysis.
+    """
+
+    # --- Configuration: Metric Mapping Strategy ---
+    # Maps URL slug -> (DB Column, AI Field Name, Display Label)
+    metrics_config = {
+        'role_interest': {
+            'col': Response.role_interest,
+            'ai_field': 'role_interest_comment',
+            'label': 'Role Interest'
+        },
+        'contribution': {
+            'col': Response.contribution,
+            'ai_field': 'contribution_comment',
+            'label': 'Contribution'
+        },
+        'learning': {
+            'col': Response.learning,
+            'ai_field': 'learning_comment',
+            'label': 'Learning'
+        },
+        'feedback': {
+            'col': Response.feedback_score,  # Note: column has _score suffix
+            'ai_field': 'feedback_comment',
+            'label': 'Feedback Culture'
+        },
+        'manager_interaction': {
+            'col': Response.manager_interaction,
+            'ai_field': 'manager_interaction_comment',
+            'label': 'Manager Bond'
+        },
+        'career_clarity': {
+            'col': Response.career_clarity,
+            'ai_field': 'career_clarity_comment',
+            'label': 'Career Clarity'
+        },
+        'permanence': {
+            'col': Response.permanence,
+            'ai_field': 'permanence_comment',
+            'label': 'Retention/Permanence'
+        },
+        'enps_score': {  # Renamed to avoid confusion with the calculated KPI
+            'col': Response.enps,
+            'ai_field': 'enps_comment',
+            'label': 'eNPS (Score)'
+        }
+    }
+
+    # 1. Capture Inputs
+    selected_dept_id = request.args.get('dept_id', type=int)
+    selected_metric_key = request.args.get('metric', 'role_interest')  # Default to Role Interest
+
+    # Validation: Fallback if invalid metric passed
+    if selected_metric_key not in metrics_config:
+        selected_metric_key = 'role_interest'
+
+    current_metric = metrics_config[selected_metric_key]
+
+    # --- PART A: Comparative Landscape (Dynamic Metric) ---
+
+    # Query 1: User Scores (Avg of Selected Column)
+    user_comparison = db.session.query(
+        Department.id,
+        Department.name,
+        func.avg(current_metric['col']).label('avg_score')
+    ).join(Employee, Employee.department_id == Department.id) \
+        .join(Response, Response.employee_id == Employee.id) \
+        .group_by(Department.id, Department.name).all()
+
+    # Query 2: AI Sentiment (Avg of Selected Field)
+    ai_comparison = db.session.query(
+        Department.id,
+        func.avg(ResponseSentiment.sentiment_rating).label('avg_sentiment')
+    ).join(Response, ResponseSentiment.response_id == Response.id) \
+        .join(Employee, Response.employee_id == Employee.id) \
+        .join(Department, Employee.department_id == Department.id) \
+        .filter(ResponseSentiment.field_name == current_metric['ai_field']) \
+        .group_by(Department.id).all()
+
+    # Merge Data
+    comp_data = {}
+    for row in user_comparison:
+        comp_data[row.id] = {
+            'name': row.name,
+            'user': round(row.avg_score, 1) if row.avg_score else 0,
+            'ai': 0
+        }
+    for row in ai_comparison:
+        if row.id in comp_data:
+            comp_data[row.id]['ai'] = round(row.avg_sentiment, 1) if row.avg_sentiment else 0
+
+    # Sort by User Score desc
+    sorted_comp = sorted(comp_data.values(), key=lambda x: x['user'], reverse=True)
+    comp_labels = [x['name'] for x in sorted_comp]
+    comp_user_values = [x['user'] for x in sorted_comp]
+    comp_ai_values = [x['ai'] for x in sorted_comp]
+
+    # --- PART B: Deep Dive (Selected Department) ---
+    deep_dive_data = None
+    selected_dept_name = "Select a Department"
+    dept_enps_score = None  # Calculated eNPS %
+
+    if selected_dept_id:
+        dept = Department.query.get(selected_dept_id)
+        if dept:
+            selected_dept_name = dept.name
+
+            # 1. Calculate eNPS for this Department
+            # Formula: % Promoters (9-10) - % Detractors (0-6)
+            enps_stats = db.session.query(
+                func.count(Response.id).label('total'),
+                func.sum(case((Response.enps >= 9, 1), else_=0)).label('promoters'),
+                func.sum(case((Response.enps <= 6, 1), else_=0)).label('detractors')
+            ).join(Employee, Response.employee_id == Employee.id) \
+                .filter(Employee.department_id == selected_dept_id).first()
+
+            if enps_stats and enps_stats.total > 0:
+                p_pct = (enps_stats.promoters or 0) / enps_stats.total
+                d_pct = (enps_stats.detractors or 0) / enps_stats.total
+                dept_enps_score = round((p_pct - d_pct) * 100, 1)
+            else:
+                dept_enps_score = 0
+
+            # 2. Filtered User Scores (Radar)
+            user_stats = db.session.query(
+                func.avg(Response.role_interest),
+                func.avg(Response.contribution),
+                func.avg(Response.learning),
+                func.avg(Response.feedback_score),
+                func.avg(Response.manager_interaction),
+                func.avg(Response.career_clarity),
+                func.avg(Response.permanence),
+                func.avg(Response.enps)
+            ).join(Employee, Response.employee_id == Employee.id) \
+                .filter(Employee.department_id == selected_dept_id).first()
+
+            # 3. Filtered AI Sentiment (Radar)
+            sentiment_stats = db.session.query(
+                ResponseSentiment.field_name,
+                func.avg(ResponseSentiment.sentiment_rating)
+            ).join(Response, ResponseSentiment.response_id == Response.id) \
+                .join(Employee, Response.employee_id == Employee.id) \
+                .filter(Employee.department_id == selected_dept_id) \
+                .group_by(ResponseSentiment.field_name).all()
+
+            # Processing Logic (Mapping DB fields to Radar Order)
+            # Reusing the order from config logic implicitly
+            radar_labels_order = [
+                'Role Interest', 'Contribution', 'Learning', 'Feedback Culture',
+                'Manager Bond', 'Career Clarity', 'Retention/Permanence', 'eNPS (Score)'
+            ]
+
+            # Helper: construct values list matching the order above
+            # AI
+            ai_dict = {row[0]: (row[1] or 0) for row in sentiment_stats}
+            ai_values = []
+            # We iterate through config items to ensure matching order is tricky because dicts are unordered in older pythons
+            # Let's use a fixed list of keys corresponding to radar_labels_order
+            keys_order = ['role_interest', 'contribution', 'learning', 'feedback', 'manager_interaction',
+                          'career_clarity', 'permanence', 'enps_score']
+
+            for key in keys_order:
+                conf = metrics_config[key]
+                ai_values.append(round(ai_dict.get(conf['ai_field'], 0), 2))
+
+            # User
+            user_values = []
+            if user_stats:
+                def safe(val): return round(val, 1) if val else 0
+
+                user_values = [
+                    safe(user_stats[0]), safe(user_stats[1]), safe(user_stats[2]),
+                    safe(user_stats[3]), safe(user_stats[4]), safe(user_stats[5]),
+                    safe(user_stats[6]), safe(user_stats[7])
+                ]
+
+            deep_dive_data = {
+                'labels': radar_labels_order,
+                'user_data': user_values,
+                'ai_data': ai_values,
+                'enps': dept_enps_score
+            }
+
+    # Departments for Dropdown
+    departments = Department.query.order_by(Department.name).all()
+
+    return render_template(
+        'areas.html',
+        active_page='areas',
+        departments=departments,
+        metrics_options=metrics_config,  # Pass config to template for dropdown
+        selected_metric=selected_metric_key,
+        selected_metric_label=current_metric['label'],
+        selected_dept_id=selected_dept_id,
+        selected_dept_name=selected_dept_name,
+        comparison={
+            'labels': comp_labels,
+            'user_values': comp_user_values,
+            'ai_values': comp_ai_values
+        },
+        deep_dive=deep_dive_data
+    )
+
+
+@web_bp.route('/employees')
+def employees_view():
+    """
+    Task 8 Final: Employee Level Visualization.
+    Features:
+    1. Search: Datalist for employees.
+    2. Benchmark Radar: Fixed logic to ensure Company vs Dept filters apply correctly.
+    3. eNPS Focus: Dedicated card for eNPS score + AI Sentiment of that specific comment.
+    4. Cleanup: Removed Action Plans and generic sentiment lists.
+    """
+    # 1. Capture Filter
+    selected_emp_id = request.args.get('emp_id', type=int)
+
+    # Helper to calculate averages for the radar chart
+    # Refined to ensure the filter is applied correctly
+    def calculate_averages(query_filter=None):
+        q = db.session.query(
+            func.avg(Response.role_interest),
+            func.avg(Response.contribution),
+            func.avg(Response.learning),
+            func.avg(Response.feedback_score),
+            func.avg(Response.manager_interaction),
+            func.avg(Response.career_clarity),
+            func.avg(Response.permanence),
+            func.avg(Response.enps)
+        ).join(Employee, Response.employee_id == Employee.id)
+
+        # FIX: Explicit check to avoid boolean ambiguity with SQLAlchemy expressions
+        if query_filter is not None:
+            q = q.filter(query_filter)
+
+        res = q.first()
+        # Handle None results (convert to 0.0)
+        return [round(x, 1) if x else 0.0 for x in res] if res else [0.0] * 8
+
+    # A. Company Averages (Global Benchmark - No Filter)
+    company_avgs = calculate_averages(None)
+
+    # Initialize variables
+    dept_avgs = [0.0] * 8
+    employee_data = None
+
+    if selected_emp_id:
+        emp = Employee.query.get(selected_emp_id)
+
+        if emp:
+            # Fetch latest Response
+            resp = Response.query.filter_by(employee_id=emp.id).first()
+
+            if resp:
+                # 1. Employee Quantitative Scores
+                emp_scores = [
+                    float(resp.role_interest or 0),
+                    float(resp.contribution or 0),
+                    float(resp.learning or 0),
+                    float(resp.feedback_score or 0),
+                    float(resp.manager_interaction or 0),
+                    float(resp.career_clarity or 0),
+                    float(resp.permanence or 0),
+                    float(resp.enps or 0)
+                ]
+
+                # 2. Dept Averages (Local Benchmark - Filter by Dept ID)
+                dept_avgs = calculate_averages(Employee.department_id == emp.department_id)
+
+                # 3. eNPS Specific Sentiment Analysis (The "Voice")
+                # We specifically look for the sentiment associated with the 'enps_comment' field
+                enps_sentiment_data = None
+
+                # Try to fetch sentiment from DB if AI ran
+                sentiment_record = db.session.query(ResponseSentiment).filter_by(
+                    response_id=resp.id,
+                    field_name='enps_comment'
+                ).first()
+
+                if sentiment_record:
+                    enps_sentiment_data = {
+                        'label': sentiment_record.sentiment_label,  # POSITIVE/NEGATIVE/NEUTRAL
+                        'score': sentiment_record.sentiment_score,  # Confidence score
+                        'rating': sentiment_record.sentiment_rating  # 1-5 Scale
+                    }
+
+                employee_data = {
+                    'details': emp,
+                    'scores': emp_scores,
+                    'dept_avgs': dept_avgs,
+                    'enps_comment': resp.enps_comment,
+                    'enps_sentiment': enps_sentiment_data
+                }
+
+    # Search List (Optimized)
+    all_employees = db.session.query(
+        Employee.id, Employee.name, Employee.email, Employee.corporate_email
+    ).order_by(Employee.name).all()
+
+    # Radar Labels
+    radar_labels = [
+        'Role Interest', 'Contribution', 'Learning', 'Feedback',
+        'Manager Bond', 'Career Path', 'Retention', 'eNPS'
+    ]
+
+    return render_template(
+        'employees.html',
+        active_page='employees',
+        search_list=all_employees,
+        selected_emp_id=selected_emp_id,
+        employee=employee_data,
+        chart_config={
+            'labels': radar_labels,
+            'company_data': company_avgs
+        }
+    )

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="fw-light text-secondary">Individual <span class="fw-bold text-dark">Performance</span></h2>
+        <p class="text-muted mb-0">Confidential employee profile and comparative feedback analysis.</p>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body p-3">
+                <form action="{{ url_for('web.employees_view') }}" method="get" class="d-flex gap-2">
+                    <div class="flex-grow-1 position-relative">
+                        <input type="text" list="employeeList" class="form-control" placeholder="Search by name or email..." 
+                               onchange="handleSearch(this)" id="searchInput">
+                        <input type="hidden" name="emp_id" id="empIdInput" value="{{ selected_emp_id }}">
+                        
+                        <datalist id="employeeList">
+                            {% for emp in search_list %}
+                            <option data-value="{{ emp.id }}" value="{{ emp.name }} ({{ emp.corporate_email or emp.email }})"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Load Profile</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if employee %}
+<div class="row mb-4 animate-fade-in">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-top border-5 border-primary">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-1 text-center">
+                        <div class="avatar-circle bg-primary text-white fs-3 fw-bold rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 64px; height: 64px;">
+                            {{ employee.details.name[0] }}
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <h4 class="mb-1 fw-bold">{{ employee.details.name }}</h4>
+                        <div class="text-muted mb-2">
+                            <i class="fas fa-briefcase me-1"></i> {{ employee.details.role or 'Unknown Role' }}
+                            <span class="mx-2">|</span>
+                            <i class="fas fa-building me-1"></i> {{ employee.details.department.name }}
+                        </div>
+                        <div class="d-flex gap-3 text-small">
+                            <span class="badge bg-light text-dark border"><i class="fas fa-clock me-1"></i> Tenure: {{ employee.details.tenure }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4 g-4 animate-fade-in">
+
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-crosshairs me-2"></i>Performance Benchmark</h6>
+                <div class="small">
+                    <span class="badge bg-primary me-1">Employee</span>
+                    <span class="badge bg-secondary me-1">Dept Avg</span>
+                    <span class="badge border text-dark">Company Avg</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="position-relative" style="height: 400px;">
+                    <canvas id="benchmarkRadar"></canvas>
+                </div>
+                <div class="mt-3 text-center text-muted small fst-italic">
+                    * If Dept and Company lines overlap, it indicates identical average scores for this dataset.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-heartbeat me-2"></i>Engagement Pulse</h6>
+            </div>
+            <div class="card-body d-flex flex-column">
+
+                <div class="text-center py-4 border-bottom bg-light bg-opacity-50">
+                    <h6 class="text-uppercase text-muted small mb-2">eNPS Score Given</h6>
+                    <div class="display-4 fw-bold
+                        {% if employee.scores[7] >= 9 %}text-success
+                        {% elif employee.scores[7] >= 7 %}text-warning
+                        {% else %}text-danger{% endif %}">
+                        {{ employee.scores[7] | int }} <span class="fs-4 text-muted">/ 10</span>
+                    </div>
+                    <div class="mt-1 fw-bold text-uppercase small letter-spacing-1
+                        {% if employee.scores[7] >= 9 %}text-success">Promoter
+                        {% elif employee.scores[7] >= 7 %}text-warning">Passive
+                        {% else %}text-danger">Detractor{% endif %}
+                    </div>
+                </div>
+
+                <div class="p-4 flex-grow-1">
+                    <h6 class="text-uppercase text-muted small mb-3">
+                        <i class="fas fa-robot me-1"></i> AI Context Analysis
+                    </h6>
+
+                    {% if employee.enps_comment %}
+                        <div class="mb-4">
+                            <div class="text-muted small mb-1">Employee Comment:</div>
+                            <div class="p-3 rounded bg-light border-start border-4 border-primary fst-italic text-dark">
+                                "{{ employee.enps_comment }}"
+                            </div>
+                        </div>
+
+                        {% if employee.enps_sentiment %}
+                            <div class="d-flex align-items-center justify-content-between p-3 border rounded shadow-sm bg-white">
+                                <span class="fw-bold text-secondary">Detected Sentiment:</span>
+
+                                {% if employee.enps_sentiment.rating >= 4 %}
+                                    <span class="badge bg-success text-white px-3 py-2 rounded-pill">
+                                        <i class="fas fa-smile me-2"></i>Positive
+                                    </span>
+                                {% elif employee.enps_sentiment.rating <= 2 %}
+                                    <span class="badge bg-danger text-white px-3 py-2 rounded-pill">
+                                        <i class="fas fa-frown me-2"></i>Negative
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                                        <i class="fas fa-meh me-2"></i>Neutral
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="text-end mt-2">
+                                <small class="text-muted">AI Confidence: {{ (employee.enps_sentiment.score * 100) | int }}%</small>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center text-muted py-5 opacity-50">
+                            <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                            <p>No qualitative comment provided.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="chart-labels" type="application/json">{{ chart_config.labels | tojson }}</script>
+<script id="data-company" type="application/json">{{ chart_config.company_data | tojson }}</script>
+<script id="data-dept" type="application/json">{{ employee.dept_avgs | tojson }}</script>
+<script id="data-emp" type="application/json">{{ employee.scores | tojson }}</script>
+
+{% else %}
+<div class="row mt-5">
+    <div class="col-12 text-center text-muted opacity-50">
+        <i class="fas fa-user-circle fa-5x mb-3"></i>
+        <h4>Select an employee to view their profile.</h4>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Search Handler
+    function handleSearch(input) {
+        const val = input.value;
+        const options = document.getElementById('employeeList').options;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value === val) {
+                document.getElementById('empIdInput').value = options[i].getAttribute('data-value');
+                break;
+            }
+        }
+    }
+
+    // Chart Initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.getElementById('benchmarkRadar')) return;
+
+        const labels = JSON.parse(document.getElementById('chart-labels').textContent);
+        const companyData = JSON.parse(document.getElementById('data-company').textContent);
+        const deptData = JSON.parse(document.getElementById('data-dept').textContent);
+        const empData = JSON.parse(document.getElementById('data-emp').textContent);
+
+        new Chart(document.getElementById('benchmarkRadar'), {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Employee',
+                        data: empData,
+                        backgroundColor: 'rgba(13, 110, 253, 0.2)', // Primary Blue
+                        borderColor: '#0d6efd',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#0d6efd',
+                        pointRadius: 4,
+                        order: 1
+                    },
+                    {
+                        label: 'Dept Avg',
+                        data: deptData,
+                        backgroundColor: 'transparent',
+                        borderColor: '#6c757d', // Grey
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6c757d',
+                        order: 2
+                    },
+                    {
+                        label: 'Company Avg',
+                        data: companyData,
+                        backgroundColor: 'rgba(0, 0, 0, 0.05)', // Slightly visible fill
+                        borderColor: '#212529', // Dark solid line for visibility
+                        borderWidth: 1,
+                        pointRadius: 2,
+                        pointBackgroundColor: '#212529',
+                        order: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index', // CRITICAL: Allows hovering to see all 3 datasets
+                    intersect: false
+                },
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 10,
+                        ticks: { stepSize: 2, backdropColor: 'transparent' },
+                        grid: { color: '#e9ecef' },
+                        angleLines: { color: '#e9ecef' },
+                        pointLabels: { font: { size: 12, weight: 'bold' } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
+                        padding: 12,
+                        cornerRadius: 4,
+                        displayColors: true,
+                        bodyFont: { size: 13 }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-light text-secondary">Department <span class="fw-bold text-dark">Intelligence</span></h2>
+        <p class="text-muted">Comparative analysis across areas and deep-dive into specific micro-cultures.</p>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                         <h6 class="mb-0 fw-bold"><i class="fas fa-chart-bar me-2"></i>Cross-Department Benchmarking</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <form class="d-flex justify-content-md-end align-items-center" onsubmit="event.preventDefault(); updateView();">
+                            <label for="metricSelector" class="me-2 small text-muted text-nowrap">Compare by:</label>
+                            <select class="form-select form-select-sm w-auto" id="metricSelector" onchange="updateView()">
+                                {% for key, config in metrics_options.items() %}
+                                <option value="{{ key }}" {% if selected_metric == key %}selected{% endif %}>
+                                    {{ config.label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-2">
+                    <span class="badge bg-light text-dark border">
+                        <span class="text-primary fw-bold">User Score (0-10)</span> vs
+                        <span class="text-success fw-bold">AI Sentiment (1-5)</span>
+                    </span>
+                    <div class="small text-muted mt-1">Metric: <strong>{{ selected_metric_label }}</strong></div>
+                </div>
+                <div style="height: 350px;">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4 justify-content-center">
+    <div class="col-md-6">
+        <div class="card bg-light border-0">
+            <div class="card-body p-3">
+                <form class="d-flex gap-2" onsubmit="event.preventDefault(); updateView();">
+                    <select class="form-select form-select-lg" id="deptSelector">
+                        <option value="" disabled {% if not selected_dept_id %}selected{% endif %}>Select an Area to Deep Dive...</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept_id == dept.id %}selected{% endif %}>
+                            {{ dept.name|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-primary px-4" onclick="updateView()">Analyze</button>
+                    {% if selected_dept_id %}
+                    <a href="{{ url_for('web.areas_view') }}" class="btn btn-outline-secondary" title="Clear"><i class="fas fa-times"></i></a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if deep_dive %}
+<div class="row mb-4 animate-fade-in">
+    <div class="col-12 text-center mb-4">
+        <h4 class="fw-light">Deep Dive: <span class="fw-bold text-primary">{{ selected_dept_name }}</span></h4>
+        <hr class="w-25 mx-auto">
+    </div>
+
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm border-start border-4
+            {% if deep_dive.enps >= 50 %}border-success{% elif deep_dive.enps >= 0 %}border-warning{% else %}border-danger{% endif %}">
+            <div class="card-body d-flex align-items-center justify-content-between p-4">
+                <div>
+                    <h5 class="text-uppercase text-muted mb-0 small">Department eNPS</h5>
+                    <h2 class="display-5 fw-bold mb-0">{{ deep_dive.enps }}</h2>
+                </div>
+                <div class="text-end">
+                    {% if deep_dive.enps >= 50 %}
+                        <i class="fas fa-smile fa-3x text-success"></i>
+                        <div class="text-success fw-bold mt-1">Excellent Zone</div>
+                    {% elif deep_dive.enps >= 0 %}
+                        <i class="fas fa-meh fa-3x text-warning"></i>
+                        <div class="text-warning fw-bold mt-1">Quality Zone</div>
+                    {% else %}
+                        <i class="fas fa-frown fa-3x text-danger"></i>
+                        <div class="text-danger fw-bold mt-1">Critical Zone</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white text-center fw-bold text-secondary">
+                User Reported Scores (0-10)
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="userRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white text-center fw-bold text-primary">
+                AI Sentiment Analysis (1-5)
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="aiRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="dd-labels" type="application/json">{{ deep_dive.labels | tojson }}</script>
+<script id="dd-user" type="application/json">{{ deep_dive.user_data | tojson }}</script>
+<script id="dd-ai" type="application/json">{{ deep_dive.ai_data | tojson }}</script>
+
+{% else %}
+<div class="row mb-5">
+    <div class="col-12 text-center py-5 text-muted">
+        <i class="fas fa-search-location fa-4x mb-3 opacity-25"></i>
+        <h5>Select a department above to see specific metrics</h5>
+    </div>
+</div>
+{% endif %}
+
+<script id="comp-labels" type="application/json">{{ comparison.labels | tojson }}</script>
+<script id="comp-user" type="application/json">{{ comparison.user_values | tojson }}</script>
+<script id="comp-ai" type="application/json">{{ comparison.ai_values | tojson }}</script>
+
+<script>
+    /**
+     * Unified Function to handle View Updates
+     * Collects both Metric and Dept ID to maintain state
+     */
+    function updateView() {
+        const metric = document.getElementById('metricSelector').value;
+        const deptId = document.getElementById('deptSelector').value;
+
+        const url = new URL(window.location.href);
+
+        if (metric) url.searchParams.set('metric', metric);
+
+        if (deptId) {
+            url.searchParams.set('dept_id', deptId);
+        } else {
+            url.searchParams.delete('dept_id');
+        }
+
+        window.location.href = url.toString();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. Comparative Chart (Mixed Types / Dual Axis) ---
+        const compCtx = document.getElementById('comparisonChart');
+        const compLabels = JSON.parse(document.getElementById('comp-labels').textContent);
+        const compUser = JSON.parse(document.getElementById('comp-user').textContent);
+        const compAi = JSON.parse(document.getElementById('comp-ai').textContent);
+
+        if (compCtx && compLabels.length > 0) {
+            new Chart(compCtx, {
+                type: 'bar',
+                data: {
+                    labels: compLabels,
+                    datasets: [
+                        {
+                            label: 'User Score (Avg)',
+                            data: compUser,
+                            backgroundColor: 'rgba(13, 110, 253, 0.6)',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'AI Sentiment (Avg)',
+                            data: compAi,
+                            backgroundColor: 'rgba(25, 135, 84, 0.8)',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: {
+                            type: 'linear', display: true, position: 'left',
+                            min: 0, max: 10,
+                            title: { display: true, text: 'User Score (0-10)' }
+                        },
+                        y1: {
+                            type: 'linear', display: true, position: 'right',
+                            min: 0, max: 5,
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'AI Sentiment (1-5)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 2. Deep Dive Radars (Only if data exists) ---
+        if (document.getElementById('userRadarChart')) {
+            const labels = JSON.parse(document.getElementById('dd-labels').textContent);
+            const userData = JSON.parse(document.getElementById('dd-user').textContent);
+            const aiData = JSON.parse(document.getElementById('dd-ai').textContent);
+
+            const createRadar = (ctxId, label, data, color, maxVal) => {
+                new Chart(document.getElementById(ctxId), {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            backgroundColor: color + '33)',
+                            borderColor: color + '1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: maxVal,
+                                pointLabels: { font: { size: 11 } }
+                            }
+                        }
+                    }
+                });
+            };
+
+            createRadar('userRadarChart', 'Score', userData, 'rgba(108, 117, 125,', 10);
+            createRadar('aiRadarChart', 'Sentiment', aiData, 'rgba(13, 110, 253,', 5);
+        }
+    });
+</script>
+{% endblock %}
