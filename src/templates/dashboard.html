@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body py-3">
+                <form class="row g-3 align-items-center" onsubmit="event.preventDefault(); applyFilters();">
+
+                    <div class="col-12 col-md-auto">
+                        <span class="fw-bold text-secondary"><i class="fas fa-sliders-h me-2"></i>Filter View:</span>
+                    </div>
+
+                    <div class="col-12 col-md-auto">
+                        <select class="form-select w-100" id="departmentFilter">
+                            <option value="">All Departments</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_dept_id == dept.id %}selected{% endif %}>
+                                {{ dept.name|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-auto">
+                        <select class="form-select w-100" id="roleFilter">
+                            <option value="">All Roles</option>
+                            {% for role in roles %}
+                            <option value="{{ role }}" {% if selected_role == role %}selected{% endif %}>
+                                {{ role }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-auto ms-md-auto"> <div class="d-grid gap-2 d-md-block">
+                            <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                                Update
+                            </button>
+                            {% if selected_dept_id or selected_role %}
+                            <a href="{{ url_for('web.index') }}" class="btn btn-outline-secondary">
+                                Clear
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <h4 class="text-secondary fw-light">
+            Analysis for: <span class="fw-bold text-dark">{{ view_context }}</span>
+        </h4>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase mb-2">Employees ({{ view_context }})</h6>
+                <div class="d-flex align-items-baseline">
+                    <h2 class="mb-0 fw-bold">{{ metrics.total_employees }}</h2>
+                    <span class="text-secondary ms-2 small">Total</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase mb-2">Avg Feedback Score</h6>
+                <div class="d-flex align-items-baseline">
+                    <h2 class="mb-0 fw-bold">{{ metrics.avg_feedback }}</h2>
+                    <span class="text-muted ms-2 small">/ 10.0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-4
+            {% if metrics.enps >= 50 %}border-success{% elif metrics.enps >= 0 %}border-warning{% else %}border-danger{% endif %}">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase mb-2">eNPS ({{ view_context }})</h6>
+                <div class="d-flex align-items-baseline">
+                    <h2 class="mb-0 fw-bold">{{ metrics.enps }}</h2>
+                    {% if metrics.enps >= 50 %}
+                        <span class="text-success ms-2 small"><i class="fas fa-smile"></i> Excellent</span>
+                    {% elif metrics.enps >= 0 %}
+                        <span class="text-warning ms-2 small"><i class="fas fa-meh"></i> Good</span>
+                    {% else %}
+                        <span class="text-danger ms-2 small"><i class="fas fa-frown"></i> Needs Action</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Company Overview: Employees by Department</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="deptDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="dashboard-data" type="application/json">
+    {{ chart_data.data | tojson }}
+</script>
+<script id="dashboard-labels" type="application/json">
+    {{ chart_data.labels | tojson }}
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Chart Initialization
+        const ctx = document.getElementById('deptDistributionChart');
+
+        // Parse data cleanly from script tags
+        const rawData = document.getElementById('dashboard-data').textContent;
+        const rawLabels = document.getElementById('dashboard-labels').textContent;
+
+        const chartValues = JSON.parse(rawData);
+        const chartLabels = JSON.parse(rawLabels);
+
+        if (ctx && chartLabels.length > 0) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Total Employees',
+                        data: chartValues,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 2] } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    });
+
+    /**
+     * Handles filtering via URL Parameters.
+     * Supports both Dept ID and Role.
+     */
+    function applyFilters() {
+        const deptId = document.getElementById('departmentFilter').value;
+        const role = document.getElementById('roleFilter').value;
+
+        const currentUrl = new URL(window.location.href);
+
+        // Update Department param
+        if (deptId) {
+            currentUrl.searchParams.set('dept_id', deptId);
+        } else {
+            currentUrl.searchParams.delete('dept_id');
+        }
+
+        // Update Role param
+        if (role) {
+            currentUrl.searchParams.set('role', role);
+        } else {
+            currentUrl.searchParams.delete('role');
+        }
+
+        window.location.href = currentUrl.toString();
+    }
+</script>
+{% endblock %}

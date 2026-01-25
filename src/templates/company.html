@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-light text-secondary">Company <span class="fw-bold text-dark">Deep Dive</span></h2>
+        <p class="text-muted">High-level analysis of organizational health, comparing qualitative sentiment (AI) against quantitative metrics.</p>
+    </div>
+</div>
+
+<div class="row mb-4 g-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 bg-primary text-white">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+                <div class="mb-3 p-3 rounded-circle bg-white bg-opacity-10">
+                    <i class="fas fa-bullhorn fa-2x"></i>
+                </div>
+                <h6 class="text-white-50 text-uppercase mb-2">Survey Participation</h6>
+                <div class="display-4 fw-bold mb-2">{{ metrics.conversion_rate }}%</div>
+                <div class="progress w-100 bg-primary-dark mb-2" style="height: 6px; background-color: rgba(0,0,0,0.2);">
+                    <div class="progress-bar bg-white" style="width: {{ metrics.conversion_rate }}%"></div>
+                </div>
+                <p class="mb-0 small text-white-50">
+                    {{ metrics.total_responses }} responses / {{ metrics.total_invited }} employees
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-hourglass-half me-2"></i>Workforce Experience (Tenure)</h6>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center h-100">
+                    <div class="col-md-6 d-flex justify-content-center">
+                        <div style="height: 320px; width: 100%;">
+                            <canvas id="tenureChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="text-dark fw-bold mb-3">Understanding the Distribution</h5>
+                        <p class="text-muted">
+                            This chart is ordered by seniority level. A balanced distribution suggests a healthy pipeline of new talent
+                            and retained senior knowledge.
+                        </p>
+                        <hr>
+                        <div class="d-flex align-items-center text-muted small">
+                             <i class="fas fa-info-circle me-2"></i>
+                             <span>Legend is ordered from Junior (< 1 year) to Senior (> 5 years).</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-balance-scale me-2"></i>Perception Gap Analysis</h6>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+
+                    <div class="col-md-6 border-end">
+                        <div class="text-center mb-3">
+                            <h6 class="fw-bold text-dark">User Reported Scores</h6>
+                            <span class="badge bg-secondary">Scale: 0 - 10 (Quantitative)</span>
+                        </div>
+                        <div style="height: 350px;">
+                            <canvas id="userRadarChart"></canvas>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">Direct responses from numerical survey questions.</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="text-center mb-3">
+                            <h6 class="fw-bold text-primary">AI Sentiment Analysis</h6>
+                            <span class="badge bg-primary">Scale: 1 - 5 (Qualitative)</span>
+                        </div>
+                        <div style="height: 350px;">
+                            <canvas id="aiRadarChart"></canvas>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">Derived from text comments using NLP Model.</small>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="tenure-data" type="application/json">{{ charts.tenure | tojson }}</script>
+<script id="ai-radar-data" type="application/json">{{ charts.ai_radar | tojson }}</script>
+<script id="user-radar-data" type="application/json">{{ charts.user_radar | tojson }}</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. Tenure Chart (Doughnut) ---
+        const tenureCtx = document.getElementById('tenureChart');
+        // Parse safely
+        const tenureRaw = document.getElementById('tenure-data').textContent;
+        const tenureData = JSON.parse(tenureRaw);
+
+        if (tenureCtx && tenureData.labels.length > 0) {
+            new Chart(tenureCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: tenureData.labels,
+                    datasets: [{
+                        data: tenureData.data,
+                        backgroundColor: [
+                            '#4e73df', // Primary Blue (Junior)
+                            '#36b9cc', // Info Cyan
+                            '#1cc88a', // Green
+                            '#f6c23e', // Yellow
+                            '#e74a3b'  // Red (Senior)
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%', // Thicker ring for better visibility
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            display: true,
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: 10
+                    }
+                }
+            });
+        }
+
+        // --- 2. User Radar Chart (Quantitative) ---
+        const userCtx = document.getElementById('userRadarChart');
+        const userData = JSON.parse(document.getElementById('user-radar-data').textContent);
+
+        if (userCtx && userData.labels.length > 0) {
+            new Chart(userCtx, {
+                type: 'radar',
+                data: {
+                    labels: userData.labels,
+                    datasets: [{
+                        label: 'Avg User Score (0-10)',
+                        data: userData.data,
+                        backgroundColor: 'rgba(108, 117, 125, 0.2)', // Gray
+                        borderColor: 'rgba(108, 117, 125, 1)',
+                        pointBackgroundColor: '#6c757d',
+                        pointHoverBackgroundColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 10,
+                            ticks: { stepSize: 2 },
+                            grid: { color: '#f8f9fa' },
+                            angleLines: { color: '#e9ecef' },
+                            pointLabels: {
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 3. AI Radar Chart (Qualitative) ---
+        const aiCtx = document.getElementById('aiRadarChart');
+        const aiData = JSON.parse(document.getElementById('ai-radar-data').textContent);
+
+        if (aiCtx && aiData.labels.length > 0) {
+            new Chart(aiCtx, {
+                type: 'radar',
+                data: {
+                    labels: aiData.labels,
+                    datasets: [{
+                        label: 'Avg Sentiment (1-5)',
+                        data: aiData.data,
+                        backgroundColor: 'rgba(13, 110, 253, 0.2)', // Primary Blue
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        pointBackgroundColor: '#0d6efd',
+                        pointHoverBackgroundColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 5,
+                            ticks: { stepSize: 1 },
+                            grid: { color: '#f8f9fa' },
+                            angleLines: { color: '#e9ecef' },
+                            pointLabels: {
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -9,6 +9,7 @@ from src.application.services.ingestion import IngestionService
 from src.application.tasks.background import async_ingest_data
 from src.application.tasks.ai_tasks import async_analyze_batch
 from src.interface.api.routes import api_bp
+from src.interface.web import web_bp
 
 
 def create_app(test_config=None):
@@ -28,6 +29,7 @@ def create_app(test_config=None):
     celery.conf.update(app.config)
 
     app.register_blueprint(api_bp)
+    app.register_blueprint(web_bp)
 
     @app.cli.command("ingest-csv")
     @click.argument("file_path")

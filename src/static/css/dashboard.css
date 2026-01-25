@@ -1,0 +1,67 @@
+/* Primary Layout */
+body {
+    overflow-x: hidden; /* Prevent horizontal scroll when sidebar toggles */
+}
+
+#wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+/* Sidebar Styling */
+#sidebar-wrapper {
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100vh;
+    transition: margin 0.25s ease-out;
+    background-color: #212529; /* Bootstrap Dark */
+}
+
+/* Content Area Styling */
+#page-content-wrapper {
+    width: 100%;
+    transition: all 0.25s ease-out;
+}
+
+/* --- RESPONSIVE LOGIC --- */
+
+/* Mobile State (Default < 768px) */
+/* Sidebar is hidden (pulled left) by default on mobile */
+#sidebar-wrapper {
+    margin-left: -250px;
+}
+
+/* Desktop State (Media Query >= 768px) */
+@media (min-width: 768px) {
+    /* Sidebar is visible by default on desktop */
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+
+    /* When toggled on desktop, it hides */
+    body.sb-sidenav-toggled #sidebar-wrapper {
+        margin-left: -250px;
+    }
+}
+
+/* Mobile Toggled State */
+/* When toggled on mobile, it becomes visible */
+body.sb-sidenav-toggled #sidebar-wrapper {
+    margin-left: 0;
+}
+
+/* Sidebar Link Styling */
+.sidebar-heading {
+    padding: 1.5rem 1.25rem; /* Match Navbar height roughly */
+}
+
+.list-group-item-action:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+.list-group-item.active {
+    background-color: #0d6efd !important; /* Bootstrap Primary */
+    border-color: #0d6efd !important;
+}
