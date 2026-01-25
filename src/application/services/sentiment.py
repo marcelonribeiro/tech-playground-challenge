@@ -101,6 +101,7 @@ class SentimentAnalysisService:
                 # Run Inference
                 # Result format: [{'label': '5 stars', 'score': 0.98}]
                 result = analyzer(str(text_content))[0]
+                stars_int = int(result['label'].split()[0])
 
                 label = cls._map_stars_to_label(result['label'])
                 score = float(result['score'])
@@ -115,13 +116,15 @@ class SentimentAnalysisService:
                     # Update existing record
                     existing_sentiment.sentiment_label = label
                     existing_sentiment.sentiment_score = score
+                    existing_sentiment.sentiment_rating = stars_int
                 else:
                     # Create new record
                     new_sentiment = ResponseSentiment(
                         response_id=response.id,
                         field_name=field_name,
                         sentiment_label=label,
-                        sentiment_score=score
+                        sentiment_score=score,
+                        sentiment_rating=stars_int
                     )
                     db.session.add(new_sentiment)
 

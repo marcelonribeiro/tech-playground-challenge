@@ -21,6 +21,9 @@ This project uses **PostgreSQL 17** containerized. The schema is designed with 3
    
 
 docker-compose exec web flask trigger-ingestion
+docker-compose exec web flask trigger-ai
+
+docker-compose exec web python -c "import torch; print(f'Torch: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
 
 docker-compose exec web pytest --cov=src --cov-report=term-missing tests/
 

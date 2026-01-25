@@ -31,11 +31,16 @@ RUN pip install --no-cache /wheels/*
 
 COPY . .
 
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Create a non-root user for security
 RUN adduser --disabled-password --gecos '' appuser
-USER appuser
 
 EXPOSE 5000
 
-# Default command (can be overridden in docker-compose)
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "src.app:create_app()"]
+USER appuser
+
+ENTRYPOINT ["entrypoint.sh"]
+
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "src.app:create_app()"]

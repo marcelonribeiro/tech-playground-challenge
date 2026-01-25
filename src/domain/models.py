@@ -43,6 +43,7 @@ class Employee(db.Model):
     function = db.Column(db.String(100))
     location = db.Column(db.String(100))
     tenure = db.Column(db.String(50))
+    tenure_rank = db.Column(db.Integer, nullable=True)
     gender = db.Column(db.String(50))
     generation = db.Column(db.String(50))
 
@@ -132,5 +133,6 @@ class ResponseSentiment(db.Model):
     field_name = db.Column(db.String(50), nullable=False)
     sentiment_label = db.Column(db.String(20), nullable=False)
     sentiment_score = db.Column(db.Float, nullable=False)
+    sentiment_rating = db.Column(db.Integer, nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

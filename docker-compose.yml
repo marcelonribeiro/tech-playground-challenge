@@ -2,13 +2,14 @@ services:
   web:
     build: .
     container_name: pin_people_web
-    command: flask run --host=0.0.0.0 --debug
     volumes:
       - .:/app
     ports:
       - "5000:5000"
     env_file:
       - .env
+    environment:
+      - RUN_MIGRATIONS=true
     depends_on:
       db:
         condition: service_healthy
@@ -25,6 +26,8 @@ services:
       - .:/app
     env_file:
       - .env
+    environment:
+      - RUN_MIGRATIONS=false
     depends_on:
       db:
         condition: service_healthy

@@ -1,5 +1,7 @@
 import click
 from flask import Flask
+
+from src.application.services.sentiment import SentimentAnalysisService
 from src.config import Config
 from src.extensions import db, celery, migrate
 from src.domain.models import Employee, Survey, Response, Department
@@ -49,6 +51,39 @@ def create_app(test_config=None):
         task = async_analyze_batch.delay()
         print(f"Task started! ID: {task.id}")
         print("Check worker logs for progress.")
+
+    @app.cli.command("bootstrap")
+    def bootstrap():
+        """
+        Full synchronous setup: Ingestion -> AI Analysis.
+        Blocks until complete. Used for container startup.
+        """
+        print("🚀 [Bootstrap] Starting system initialization...")
+        print("📥 [Bootstrap] Step 1/2: Running Data Ingestion...")
+        try:
+            # We call the service directly, bypassing Celery
+            result = IngestionService.process_data()
+            print(f"✅ [Bootstrap] Ingestion Complete: {result}")
+        except Exception as e:
+            print(f"❌ [Bootstrap] Ingestion Failed: {e}")
+
+        print("🧠 [Bootstrap] Step 2/2: Running AI Sentiment Analysis...")
+        try:
+            with app.app_context():
+                all_ids = [r.id for r in db.session.query(Response.id).all()]
+                total = len(all_ids)
+                print(f"   > Found {total} responses to analyze.")
+
+                for i, r_id in enumerate(all_ids):
+                    SentimentAnalysisService.analyze_response(r_id)
+                    if i % 50 == 0:
+                        print(f"   > Progress: {i}/{total}...")
+
+            print("✅ [Bootstrap] AI Analysis Complete.")
+        except Exception as e:
+            print(f"❌ [Bootstrap] AI Analysis Failed: {e}")
+
+        print("✨ [Bootstrap] System Ready!")
 
     # Healthcheck
     @app.route('/health')

@@ -107,6 +107,7 @@ class IngestionService:
                     dept_id = dept_cache[dept_name]
 
                     # B. Employee (Full Update)
+                    # Calculate Rank
                     if emp_dto.email in emp_cache:
                         employee = emp_cache[emp_dto.email]
                         IngestionService._update_employee_fields(employee, emp_dto, dept_id)
@@ -194,6 +195,7 @@ class IngestionService:
         employee.function = dto.function
         employee.location = dto.location
         employee.tenure = dto.tenure
+        employee.tenure_rank = IngestionService._calculate_tenure_rank(dto.tenure)
         employee.gender = dto.gender
         employee.generation = dto.generation
         employee.company_level_0 = dto.company_level_0
@@ -201,3 +203,26 @@ class IngestionService:
         employee.management_level_2 = dto.management_level_2
         employee.coordination_level_3 = dto.coordination_level_3
         employee.area_level_4 = dto.area_level_4
+
+    @staticmethod
+    def _calculate_tenure_rank(tenure_str: str) -> int:
+        """
+        Maps tenure string to an ordinal integer for sorting.
+        Categories:
+        1: < 1 year
+        2: 1-2 years
+        3: 2-5 years
+        4: > 5 years
+        """
+        if not tenure_str:
+            return 0
+
+        t = tenure_str.lower().strip()
+
+        # Ordem lógica de verificação
+        if "menos de 1" in t: return 1
+        if "entre 1 e 2" in t: return 2
+        if "entre 2 e 5" in t: return 3
+        if "mais de 5" in t: return 4
+
+        return 0  # Caso não bata com nada (Fallback)
