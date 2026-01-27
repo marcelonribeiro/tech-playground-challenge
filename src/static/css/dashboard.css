@@ -1,6 +1,8 @@
 /* Primary Layout */
 body {
-    overflow-x: hidden; /* Prevent horizontal scroll when sidebar toggles */
+    overflow-x: hidden;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f8f9fa; /* Light Gray Background */
 }
 
 #wrapper {
@@ -9,59 +11,79 @@ body {
     align-items: stretch;
 }
 
-/* Sidebar Styling */
+/* Sidebar Styling - Dark Theme */
 #sidebar-wrapper {
     min-width: 250px;
     max-width: 250px;
     min-height: 100vh;
     transition: margin 0.25s ease-out;
-    background-color: #212529; /* Bootstrap Dark */
+    background-color: #1a1d20; /* Darker Bootstrap */
+    box-shadow: 4px 0 10px rgba(0,0,0,0.1);
 }
 
-/* Content Area Styling */
-#page-content-wrapper {
-    width: 100%;
-    transition: all 0.25s ease-out;
-}
-
-/* --- RESPONSIVE LOGIC --- */
-
-/* Mobile State (Default < 768px) */
-/* Sidebar is hidden (pulled left) by default on mobile */
-#sidebar-wrapper {
-    margin-left: -250px;
-}
-
-/* Desktop State (Media Query >= 768px) */
-@media (min-width: 768px) {
-    /* Sidebar is visible by default on desktop */
-    #sidebar-wrapper {
-        margin-left: 0;
-    }
-
-    /* When toggled on desktop, it hides */
-    body.sb-sidenav-toggled #sidebar-wrapper {
-        margin-left: -250px;
-    }
-}
-
-/* Mobile Toggled State */
-/* When toggled on mobile, it becomes visible */
-body.sb-sidenav-toggled #sidebar-wrapper {
-    margin-left: 0;
-}
-
-/* Sidebar Link Styling */
 .sidebar-heading {
-    padding: 1.5rem 1.25rem; /* Match Navbar height roughly */
+    padding: 1.5rem 1.25rem;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
 }
 
-.list-group-item-action:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+.list-group-item {
+    border: none;
+    padding: 1rem 1.25rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
     color: #fff !important;
+    transform: translateX(5px);
 }
 
 .list-group-item.active {
-    background-color: #0d6efd !important; /* Bootstrap Primary */
-    border-color: #0d6efd !important;
+    background: linear-gradient(90deg, #0d6efd 0%, #0b5ed7 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 6px rgba(13, 110, 253, 0.3);
+}
+
+/* Content Area */
+#page-content-wrapper {
+    width: 100%;
+    flex: 1; /* Ensure it takes remaining space */
+}
+
+/* Card Enhancements */
+.card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+/* Info Icon Tooltips */
+.info-icon {
+    color: #6c757d;
+    cursor: help;
+    font-size: 0.85rem;
+    margin-left: 5px;
+}
+
+/* Empty State Styling */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: #fff;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+}
+
+/* Responsive Logic */
+@media (min-width: 768px) {
+    #sidebar-wrapper { margin-left: 0; }
+    body.sb-sidenav-toggled #sidebar-wrapper { margin-left: -250px; }
+}
+
+@media (max-width: 768px) {
+    #sidebar-wrapper { margin-left: -250px; }
+    body.sb-sidenav-toggled #sidebar-wrapper { margin-left: 0; }
 }

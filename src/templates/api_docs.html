@@ -1,73 +1,161 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<style>
+    /* Override Global Sidebar Styles for Local API Menu */
+    #api-sidebar .list-group-item {
+        color: #495057 !important; /* Dark Text */
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+    }
+
+    #api-sidebar .list-group-item:hover {
+        background-color: #e9ecef !important; /* Light Gray Hover */
+        color: #0d6efd !important; /* Primary Blue Text */
+        transform: translateX(5px);
+    }
+
+    #api-sidebar .list-group-item.active {
+        background-color: #f8f9fa !important;
+        border-left: 3px solid #0d6efd;
+        color: #0d6efd !important;
+        font-weight: bold;
+    }
+
+    /* Code Block Styling */
+    .code-block {
+        background-color: #212529; /* Dark Background */
+        color: #a5d6ff; /* Light Blue Text for code */
+        border-radius: 6px;
+        padding: 1rem;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.85rem;
+        position: relative;
+    }
+
+    .code-label {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: #343a40;
+        color: #adb5bd;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-bottom-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+
+    /* Smooth Scroll adjustment for sticky header */
+    html {
+        scroll-behavior: smooth;
+    }
+</style>
+
 <div class="row mb-5">
     <div class="col-12 text-center">
-        <h2 class="fw-light text-secondary">API <span class="fw-bold text-dark">Reference</span></h2>
-        <p class="text-muted">Comprehensive guide to consuming Pin People Analytics data programmatically.</p>
+        <h2 class="fw-bold text-dark mb-0">Developer <span class="text-primary">Hub</span></h2>
+        <p class="text-muted">
+            Documentation and reference for integrating <strong>Pin People Analytics</strong> into your workflows.
+        </p>
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-3 mb-4">
-        <div class="sticky-top" style="top: 2rem; z-index: 1;">
-            <div class="list-group shadow-sm">
-                <a href="#intro" class="list-group-item list-group-item-action fw-bold">Introduction</a>
-                <a href="#employees" class="list-group-item list-group-item-action">List Employees</a>
-                <a href="#company" class="list-group-item list-group-item-action">Company Metrics</a>
-                <a href="#departments" class="list-group-item list-group-item-action">Departments</a>
-                <a href="#sentiment" class="list-group-item list-group-item-action">Sentiment Overview</a>
+        <div class="sticky-top" style="top: 2rem; z-index: 10;">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold text-uppercase small text-muted border-0">
+                    Table of Contents
+                </div>
+                <div class="list-group list-group-flush" id="api-sidebar">
+                    <a href="#intro" class="list-group-item list-group-item-action">
+                        <i class="fas fa-flag me-2"></i>Getting Started
+                    </a>
+                    <a href="#employees" class="list-group-item list-group-item-action">
+                        <i class="fas fa-users me-2"></i>List Employees
+                    </a>
+                    <a href="#company" class="list-group-item list-group-item-action">
+                        <i class="fas fa-building me-2"></i>Company Metrics
+                    </a>
+                    <a href="#departments" class="list-group-item list-group-item-action">
+                        <i class="fas fa-layer-group me-2"></i>Departments
+                    </a>
+                    <a href="#sentiment" class="list-group-item list-group-item-action">
+                        <i class="fas fa-brain me-2"></i>Sentiment Analysis
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-9">
-        
-        <section id="intro" class="mb-5">
+
+        <section id="intro" class="mb-5 animate-fade-in">
             <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h4 class="card-title fw-bold">Getting Started</h4>
-                    <p>The API is built using REST principles. All responses are in JSON format.</p>
-                    <hr>
-                    <h6 class="fw-bold">Base URL</h6>
-                    <code class="bg-light p-2 rounded d-block mb-3">http://localhost:5000/api/v1</code>
-                    
-                    <h6 class="fw-bold">Testing with cURL</h6>
-                    <p class="small text-muted">You can test any endpoint using your terminal:</p>
-                    <pre class="bg-dark text-white p-3 rounded"><code>curl -X GET http://localhost:5000/api/v1/departments</code></pre>
+                <div class="card-body p-4">
+                    <h4 class="card-title fw-bold text-dark">Getting Started</h4>
+                    <p class="text-muted">
+                        The API follows RESTful principles. All endpoints return JSON objects.
+                        Errors are returned with standard HTTP status codes and a JSON error message.
+                    </p>
+
+                    <div class="mt-4">
+                        <h6 class="fw-bold small text-uppercase text-secondary">Base URL</h6>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-globe"></i></span>
+                            <input type="text" class="form-control bg-light border-start-0 font-monospace text-dark"
+                                   value="http://localhost:5000/api/v1" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6 class="fw-bold small text-uppercase text-secondary">Quick Test (cURL)</h6>
+                        <div class="code-block">
+                            <span class="code-label">BASH</span>
+                            <code>curl -X GET http://localhost:5000/api/v1/health</code>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="employees" class="mb-5">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <span class="badge bg-primary me-2">GET</span>
-                    <span class="fw-bold font-monospace">/employees</span>
+                <div class="card-header bg-white py-3 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary px-3 py-2 me-3 rounded-pill font-monospace">GET</span>
+                        <span class="fw-bold font-monospace fs-5 text-dark">/employees</span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p>Retrieves a paginated list of employees with optional filtering.</p>
-                    
-                    <h6 class="mt-4 text-secondary">Query Parameters</h6>
-                    <table class="table table-sm table-bordered">
-                        <thead class="table-light"><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
-                        <tbody>
-                            <tr><td><code>page</code></td><td>int</td><td>Page number (default: 1)</td></tr>
-                            <tr><td><code>per_page</code></td><td>int</td><td>Items per page (default: 10)</td></tr>
-                            <tr><td><code>department_id</code></td><td>int</td><td>Filter by Department ID</td></tr>
-                            <tr><td><code>role</code></td><td>string</td><td>Filter by Role name (partial match)</td></tr>
-                        </tbody>
-                    </table>
+                <div class="card-body p-4">
+                    <p class="text-secondary">Retrieves a paginated directory of employees. Supports filtering by department and role.</p>
 
-                    <h6 class="mt-4 text-secondary">Response Example</h6>
-                    <pre class="bg-light p-3 rounded small"><code>{
+                    <h6 class="mt-4 small fw-bold text-uppercase text-muted">Query Parameters</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm border align-middle">
+                            <thead class="table-light"><tr><th>Param</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td class="font-monospace text-primary">page</td><td>int</td><td>No</td><td>Page number (default: 1)</td></tr>
+                                <tr><td class="font-monospace text-primary">per_page</td><td>int</td><td>No</td><td>Items per page (default: 10)</td></tr>
+                                <tr><td class="font-monospace text-primary">department_id</td><td>int</td><td>No</td><td>Filter by Department ID</td></tr>
+                                <tr><td class="font-monospace text-primary">role</td><td>string</td><td>No</td><td>Partial match on role name</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h6 class="mt-4 small fw-bold text-uppercase text-muted">Response Example</h6>
+                    <div class="code-block">
+                        <span class="code-label">JSON</span>
+<pre class="mb-0"><code>{
   "items": [
     {
       "id": 101,
       "name": "Alice Johnson",
-      "email": "alice@example.com",
+      "email": "alice@pin.com",
       "role": "Data Scientist",
-      "department": "Engineering"
+      "department": { "id": 1, "name": "Engineering" },
+      "tenure": "Between 2 and 5 years"
     }
   ],
   "total": 50,
@@ -75,72 +163,90 @@
   "per_page": 10,
   "pages": 5
 }</code></pre>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="company" class="mb-5">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <span class="badge bg-primary me-2">GET</span>
-                    <span class="fw-bold font-monospace">/dashboard/company</span>
+                <div class="card-header bg-white py-3 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary px-3 py-2 me-3 rounded-pill font-monospace">GET</span>
+                        <span class="fw-bold font-monospace fs-5 text-dark">/dashboard/company</span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p>Returns high-level KPI metrics for the executive dashboard.</p>
-                    
-                    <h6 class="mt-4 text-secondary">Response Example</h6>
-                    <pre class="bg-light p-3 rounded small"><code>{
+                <div class="card-body p-4">
+                    <p class="text-secondary">Returns aggregated KPI metrics for the executive dashboard.</p>
+
+                    <h6 class="mt-4 small fw-bold text-uppercase text-muted">Response Example</h6>
+                    <div class="code-block">
+                        <span class="code-label">JSON</span>
+<pre class="mb-0"><code>{
   "total_employees": 150,
   "participation_rate": 85.5,
   "company_enps": {
     "score": 45,
-    "promoters": 80,
-    "detractors": 10,
+    "classification": "Great",
+    "promoters_pct": 55.0,
+    "detractors_pct": 10.0,
     "total_responses": 128
   }
 }</code></pre>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="departments" class="mb-5">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <span class="badge bg-primary me-2">GET</span>
-                    <span class="fw-bold font-monospace">/departments</span>
+                <div class="card-header bg-white py-3 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary px-3 py-2 me-3 rounded-pill font-monospace">GET</span>
+                        <span class="fw-bold font-monospace fs-5 text-dark">/departments</span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p>Helper endpoint to fetch all available departments. Useful for populating dropdowns.</p>
-                    
-                    <h6 class="mt-4 text-secondary">Response Example</h6>
-                    <pre class="bg-light p-3 rounded small"><code>[
+                <div class="card-body p-4">
+                    <p class="text-secondary">Helper endpoint to fetch all available departments. Useful for populating dropdowns.</p>
+
+                    <h6 class="mt-4 small fw-bold text-uppercase text-muted">Response Example</h6>
+                    <div class="code-block">
+                        <span class="code-label">JSON</span>
+<pre class="mb-0"><code>[
   { "id": 1, "name": "Engineering" },
   { "id": 2, "name": "Human Resources" },
   { "id": 3, "name": "Sales" }
 ]</code></pre>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="sentiment" class="mb-5">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <span class="badge bg-primary me-2">GET</span>
-                    <span class="fw-bold font-monospace">/analytics/sentiment-overview</span>
+                <div class="card-header bg-white py-3 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary px-3 py-2 me-3 rounded-pill font-monospace">GET</span>
+                        <span class="fw-bold font-monospace fs-5 text-dark">/analytics/sentiment-overview</span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p>Aggregates AI-driven sentiment analysis grouped by comment category.</p>
+                <div class="card-body p-4">
+                    <p class="text-secondary">Aggregates AI-driven sentiment analysis grouped by feedback category. Used for heatmaps and radar charts.</p>
 
-                    <h6 class="mt-4 text-secondary">Query Parameters</h6>
-                    <table class="table table-sm table-bordered">
-                        <thead class="table-light"><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
-                        <tbody>
-                            <tr><td><code>department_id</code></td><td>int</td><td>Optional. Filter analysis by department.</td></tr>
-                        </tbody>
-                    </table>
-                    
-                    <h6 class="mt-4 text-secondary">Response Example</h6>
-                    <pre class="bg-light p-3 rounded small"><code>{
+                    <h6 class="mt-4 small fw-bold text-uppercase text-muted">Query Parameters</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm border align-middle">
+                            <thead class="table-light"><tr><th>Param</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td class="font-monospace text-primary">department_id</td><td>int</td><td>No</td><td>Filter analysis by department</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h6 class="mt-4 small fw-bold text-uppercase text-muted">Response Example</h6>
+                    <div class="code-block">
+                        <span class="code-label">JSON</span>
+<pre class="mb-0"><code>{
   "department_id": null,
   "metrics": [
     {
@@ -156,6 +262,7 @@
     }
   ]
 }</code></pre>
+                    </div>
                 </div>
             </div>
         </section>
