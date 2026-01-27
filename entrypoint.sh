@@ -1,6 +1,4 @@
 #!/bin/sh
-
-# Fail fast
 set -e
 
 echo "🚀 [Entrypoint] Container started."
@@ -11,10 +9,10 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "   -> Running Database Migrations..."
     flask db upgrade
 
-    echo "   -> Running Data Bootstrap (Ingestion + AI)..."
+    echo "   -> Running Unified Bootstrap (Ingestion + AI)..."
     flask bootstrap
 else
-    echo "⏩ [Entrypoint] Skipping Migrations (Worker or Replica mode)."
+    echo "⏩ [Entrypoint] Skipping Migrations (Worker/Replica mode)."
 fi
 
 echo "🔥 [Entrypoint] Executing command..."

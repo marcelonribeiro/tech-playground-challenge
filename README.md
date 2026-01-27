@@ -29,3 +29,5 @@ docker-compose exec web pytest --cov=src --cov-report=term-missing tests/
 
 # local
 set DATABASE_URL=postgresql://pinuser:pinpassword@localhost:5432/pindb
+
+pytest --cov=src --cov-report=html

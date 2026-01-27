@@ -1,13 +1,14 @@
+from datetime import timedelta
+
 import click
+import os
+
+from celery.schedules import crontab
 from flask import Flask
 
-from src.application.services.sentiment import SentimentAnalysisService
 from src.config import Config
 from src.extensions import db, celery, migrate
-from src.domain.models import Employee, Survey, Response, Department
 from src.application.services.ingestion import IngestionService
-from src.application.tasks.background import async_ingest_data
-from src.application.tasks.ai_tasks import async_analyze_batch
 from src.interface.api.routes import api_bp
 from src.interface.web import web_bp
 
@@ -25,67 +26,48 @@ def create_app(test_config=None):
     db.init_app(app)
     migrate.init_app(app, db)
 
-    # Configure Celery
-    celery.conf.update(app.config)
+    celery_config = {
+        'broker_url': os.environ.get('CELERY_BROKER_URL'),
+        'result_backend': os.environ.get('CELERY_RESULT_BACKEND'),
+        'task_ignore_result': True,
+        'broker_connection_retry_on_startup': True,
+        'beat_schedule': {
+            'daily-ingestion-pipeline': {
+                'task': 'data_pipeline.run_full_sync',
+                'schedule': crontab(hour=0, minute=0),
+            },
+        }
+    }
+
+    if app.config.get('TESTING'):
+        celery_config['task_always_eager'] = True
+        celery_config['task_eager_propagates'] = True
+
+    celery.conf.update(**celery_config)
 
     app.register_blueprint(api_bp)
     app.register_blueprint(web_bp)
 
-    @app.cli.command("ingest-csv")
-    @click.argument("file_path")
-    def ingest_csv(file_path):
-        try:
-            IngestionService.process_data(source_url=file_path, force_local=True)
-            print("Done.")
-        except Exception as e:
-            print(e)
-
-    @app.cli.command("trigger-ingestion")
-    def trigger_ingestion():
-        """Triggers the Celery task to ingest data from GitHub."""
-        task = async_ingest_data.delay()
-        print(f"Task triggered! ID: {task.id}")
-
-    @app.cli.command("trigger-ai")
-    def trigger_ai():
-        """Triggers the AI Sentiment Analysis Batch Job."""
-        print("Triggering AI Analysis background task...")
-        task = async_analyze_batch.delay()
-        print(f"Task started! ID: {task.id}")
-        print("Check worker logs for progress.")
-
     @app.cli.command("bootstrap")
     def bootstrap():
         """
-        Full synchronous setup: Ingestion -> AI Analysis.
-        Blocks until complete. Used for container startup.
+        Runs the unified data pipeline (Ingestion + AI).
+        Ensures the database is fully seeded and analyzed in one go.
         """
-        print("🚀 [Bootstrap] Starting system initialization...")
-        print("📥 [Bootstrap] Step 1/2: Running Data Ingestion...")
+        print("--- BOOTSTRAP: STARTING ---")
+
         try:
-            # We call the service directly, bypassing Celery
-            result = IngestionService.process_data()
-            print(f"✅ [Bootstrap] Ingestion Complete: {result}")
+            print("1. Running Unified Data Pipeline (ETL + AI)...")
+            stats = IngestionService.run_pipeline()
+            count = stats.get('processed', 0)
+            print(f"   -> Success! Records processed: {count}")
+            print(f"   -> AI Analysis: {stats.get('ai_analyzed', 0)}")
         except Exception as e:
-            print(f"❌ [Bootstrap] Ingestion Failed: {e}")
+            print(f"   -> Critical Error during bootstrap: {e}")
+            import sys
+            sys.exit(1)
 
-        print("🧠 [Bootstrap] Step 2/2: Running AI Sentiment Analysis...")
-        try:
-            with app.app_context():
-                all_ids = [r.id for r in db.session.query(Response.id).all()]
-                total = len(all_ids)
-                print(f"   > Found {total} responses to analyze.")
-
-                for i, r_id in enumerate(all_ids):
-                    SentimentAnalysisService.analyze_response(r_id)
-                    if i % 50 == 0:
-                        print(f"   > Progress: {i}/{total}...")
-
-            print("✅ [Bootstrap] AI Analysis Complete.")
-        except Exception as e:
-            print(f"❌ [Bootstrap] AI Analysis Failed: {e}")
-
-        print("✨ [Bootstrap] System Ready!")
+        print("--- BOOTSTRAP: FINISHED ---")
 
     # Healthcheck
     @app.route('/health')

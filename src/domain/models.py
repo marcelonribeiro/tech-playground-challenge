@@ -33,7 +33,6 @@ class Employee(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     name = db.Column(db.String(150), nullable=False)
     corporate_email = db.Column(db.String(120))
-    phone = db.Column(db.String(50))
 
     # Organizational Links
     # INDEX: Optimization for JOINs with Department table

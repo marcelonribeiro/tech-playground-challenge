@@ -21,7 +21,25 @@ services:
   worker:
     build: .
     container_name: pin_people_worker
-    command: celery -A src.application.tasks.celery_worker.celery worker --loglevel=info
+    command: celery -A src.celery_app.celery worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - RUN_MIGRATIONS=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - pin_net
+
+  beat:
+    build: .
+    container_name: pin_people_beat
+    command: celery -A src.celery_app.celery beat --loglevel=info
     volumes:
       - .:/app
     env_file:

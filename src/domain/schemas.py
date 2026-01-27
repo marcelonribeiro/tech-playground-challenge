@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
-from typing import Optional
+from typing import Optional, Dict, List
 from datetime import datetime, date
 
 
@@ -14,10 +14,9 @@ class EmployeeSchema(BaseModel):
     name: str = Field(..., alias='nome')
     email: EmailStr = Field(..., alias='email')
     corporate_email: Optional[str] = Field(None, alias='email_corporativo')
-    phone: Optional[str] = Field(None, alias='celular')
 
     # Organization
-    department: str = Field(..., alias='area')  # Will be normalized to Department entity
+    department: str = Field(..., alias='area')
     role: Optional[str] = Field(None, alias='cargo')
     function: Optional[str] = Field(None, alias='funcao')
     location: Optional[str] = Field(None, alias='localidade')
@@ -34,7 +33,7 @@ class EmployeeSchema(BaseModel):
     coordination_level_3: Optional[str] = Field(None, alias='n3_coordenacao')
     area_level_4: Optional[str] = Field(None, alias='n4_area')
 
-    @field_validator('corporate_email', 'phone', 'role', 'function', mode='before')
+    @field_validator('corporate_email', 'role', 'function', mode='before')
     @classmethod
     def empty_str_to_none(cls, v):
         if isinstance(v, str) and (v.strip() == '' or v == '-'):
@@ -130,3 +129,20 @@ class DashboardStats(BaseModel):
     company_enps: ENPSMetric
     total_employees: int
     participation_rate: float
+
+class SentimentMetric(BaseModel):
+    """
+    Represents aggregated sentiment data for a specific aspect (e.g., 'Manager Bond').
+    """
+    field_name: str = Field(..., description="The category of the feedback (e.g., manager_interaction_comment)")
+    friendly_label: str = Field(..., description="Human readable label")
+    average_rating: float = Field(..., description="Average AI score from 1 to 5")
+    sample_size: int = Field(..., description="Number of comments analyzed")
+
+    # Distribution of labels: {'POSITIVE': 15, 'NEGATIVE': 3, 'NEUTRAL': 5}
+    distribution: Dict[str, int]
+
+
+class SentimentOverviewResponse(BaseModel):
+    department_id: Optional[int] = None
+    metrics: List[SentimentMetric]
