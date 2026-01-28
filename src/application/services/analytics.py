@@ -1,6 +1,6 @@
 from sqlalchemy import func, case
 from src.extensions import db
-from src.domain.models import Response, Employee, Survey, ResponseSentiment
+from src.domain.models import Response, Employee, ResponseSentiment
 from src.domain.schemas import ENPSMetric
 
 
@@ -23,7 +23,6 @@ class AnalyticsService:
 
         # Apply filters (e.g., specific department)
         if filters:
-            # Join required if filtering by Employee attributes
             query = query.join(Employee)
             for key, value in filters.items():
                 query = query.filter(getattr(Employee, key) == value)
@@ -78,8 +77,6 @@ class AnalyticsService:
             ResponseSentiment.field_name,
             func.avg(ResponseSentiment.sentiment_rating).label('avg_rating'),
             func.count(ResponseSentiment.id).label('total_count'),
-            # Aggregating labels (Postgres specific, or manual logic)
-            # Here we simplify by fetching groups to keep it DB-agnostic friendly or use SUM/CASE
             func.sum(case((ResponseSentiment.sentiment_label == 'POSITIVE', 1), else_=0)).label('pos_count'),
             func.sum(case((ResponseSentiment.sentiment_label == 'NEUTRAL', 1), else_=0)).label('neu_count'),
             func.sum(case((ResponseSentiment.sentiment_label == 'NEGATIVE', 1), else_=0)).label('neg_count')

@@ -10,7 +10,6 @@ class Department(db.Model):
     __tablename__ = 'departments'
 
     id = db.Column(db.Integer, primary_key=True)
-    # INDEX: Critical for aggregation queries (AVG score by Department)
     name = db.Column(db.String(150), unique=True, nullable=False, index=True)
 
     # Relationships
@@ -29,13 +28,11 @@ class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # Identifiers
-    # INDEX: Critical for lookups during ingestion (avoid duplicates)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     name = db.Column(db.String(150), nullable=False)
     corporate_email = db.Column(db.String(120))
 
     # Organizational Links
-    # INDEX: Optimization for JOINs with Department table
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=True, index=True)
 
     role = db.Column(db.String(100))
@@ -46,7 +43,7 @@ class Employee(db.Model):
     gender = db.Column(db.String(50))
     generation = db.Column(db.String(50))
 
-    # Hierarchy (Denormalized here for simplicity, or could be separate tables)
+    # Hierarchy
     company_level_0 = db.Column(db.String(100))
     directorate_level_1 = db.Column(db.String(100))
     management_level_2 = db.Column(db.String(100))
@@ -68,7 +65,6 @@ class Survey(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), default="Organizational Climate")
-    # INDEX: Critical for time-series analysis
     date = db.Column(db.Date, nullable=False, index=True)
 
     responses = db.relationship('Response', backref='survey', lazy='dynamic')
@@ -86,7 +82,6 @@ class Response(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # Foreign Keys
-    # INDEX: Essential for JOINs
     employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False, index=True)
     survey_id = db.Column(db.Integer, db.ForeignKey('surveys.id'), nullable=False, index=True)
 

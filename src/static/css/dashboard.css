@@ -48,7 +48,7 @@ body {
 /* Content Area */
 #page-content-wrapper {
     width: 100%;
-    flex: 1; /* Ensure it takes remaining space */
+    flex: 1;
 }
 
 /* Card Enhancements */

@@ -145,7 +145,7 @@ class PaginatedEmployeeResponse(BaseModel):
 class ENPSMetric(BaseModel):
     """DTO for the calculated eNPS score and its breakdown."""
     score: int
-    classification: str  # Excellent, Great, Good, Needs Improvement
+    classification: str
     promoters_pct: float
     detractors_pct: float
     passives_pct: float

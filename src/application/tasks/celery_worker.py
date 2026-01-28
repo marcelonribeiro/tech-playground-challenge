@@ -12,7 +12,7 @@ from src.application.services.ingestion import IngestionService
 def run_full_data_sync(self):
     """
     Background task to run the complete ETL + AI pipeline.
-    Scheduled to run periodically (Daily) or triggered manually.
+    Scheduled to run periodically (Daily)
     Includes retry logic for robustness against network/DB blips.
     """
     print(f"I [Celery] Starting Full Data Sync Task (Try {self.request.retries + 1})...")

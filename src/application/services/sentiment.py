@@ -4,7 +4,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from src.extensions import db
 from src.domain.models import Response, ResponseSentiment
 
-# Seniority Check: Structured logging for observability
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class SentimentAnalysisService:
                     "sentiment-analysis",
                     model=cls.MODEL_NAME,
                     tokenizer=cls.MODEL_NAME,
-                    truncation=True,  # Ensure we don't crash on long texts
+                    truncation=True,
                     max_length=512
                 )
                 logger.info("AI: Model loaded successfully.")

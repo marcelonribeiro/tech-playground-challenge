@@ -41,14 +41,11 @@ class IngestionService:
         stats = {"processed": 0, "updated": 0, "created": 0, "errors": 0, "ai_analyzed": 0}
 
         try:
-            # 1. Extraction (Now handles path injection)
             df = IngestionService._load_data(source_url, force_local, local_cache_path)
 
-            # 2. Structural Sync
             IngestionService._process_employees_and_departments(df)
             IngestionService._process_surveys(df)
 
-            # 3. Transactional Sync (Upsert Strategy)
             ai_stats = IngestionService._process_responses_and_ai(df)
 
             stats.update(ai_stats)
@@ -76,7 +73,7 @@ class IngestionService:
                 response = requests.get(url, timeout=30)
                 response.raise_for_status()
 
-                # Update local cache (ignored by git)
+                # Update local cache
                 with open(local_path, 'w', encoding='utf-8') as f:
                     f.write(response.text)
 
@@ -142,7 +139,6 @@ class IngestionService:
 
         for _, row in df.iterrows():
             try:
-                # FIX: Use Schema to parse date from 'Data da Resposta' column
                 row_dict = row.to_dict()
                 resp_dto = SurveyResponseSchema(**row_dict)
                 survey_date = resp_dto.response_date

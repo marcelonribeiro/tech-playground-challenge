@@ -76,14 +76,11 @@ def get_sentiment_overview():
     Returns aggregated AI sentiment metrics.
     Useful for heatmaps and identifying cultural pain points.
     """
-    # 1. Input Parsing
     department_id = request.args.get('department_id', type=int)
 
-    # 2. Service Call
     try:
         raw_metrics = AnalyticsService.get_sentiment_overview(department_id)
 
-        # 3. Serialization (Pydantic)
         response = SentimentOverviewResponse(
             department_id=department_id,
             metrics=raw_metrics
@@ -92,6 +89,5 @@ def get_sentiment_overview():
         return jsonify(response.model_dump())
 
     except Exception as e:
-        # In a real scenario, use a proper error handler
         current_app.logger.error(f"Error fetching sentiment overview: {e}")
         return jsonify({"error": "Failed to calculate sentiment metrics"}), 500

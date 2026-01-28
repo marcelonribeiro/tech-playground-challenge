@@ -344,7 +344,7 @@ class DashboardService:
             }
         }
 
-    # --- Private Helpers ---
+    # Private Helpers
 
     @staticmethod
     def _calculate_enps_score(query) -> float:

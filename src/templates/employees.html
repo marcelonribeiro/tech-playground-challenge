@@ -214,7 +214,7 @@
 {% endif %}
 
 <script>
-    // --- Search Handler (Kept Functional) ---
+    // --- Search Handler ---
     function handleSearch(input) {
         const val = input.value;
         const options = document.getElementById('employeeList').options;
@@ -243,7 +243,7 @@
                     {
                         label: 'Employee',
                         data: empData,
-                        backgroundColor: 'rgba(13, 110, 253, 0.25)', // Primary Blue Filled
+                        backgroundColor: 'rgba(13, 110, 253, 0.25)',
                         borderColor: '#0d6efd',
                         borderWidth: 3,
                         pointBackgroundColor: '#0d6efd',
@@ -255,9 +255,9 @@
                         label: 'Dept Avg',
                         data: deptData,
                         backgroundColor: 'transparent',
-                        borderColor: '#6c757d', // Grey
+                        borderColor: '#6c757d',
                         borderWidth: 2,
-                        borderDash: [5, 5], // Dashed line for contrast
+                        borderDash: [5, 5],
                         pointRadius: 0,
                         order: 2
                     },
@@ -265,7 +265,7 @@
                         label: 'Company Avg',
                         data: companyData,
                         backgroundColor: 'transparent',
-                        borderColor: '#adb5bd', // Lighter Grey
+                        borderColor: '#adb5bd',
                         borderWidth: 1,
                         pointRadius: 0,
                         order: 3
@@ -279,7 +279,7 @@
                     r: {
                         min: 0,
                         max: 10,
-                        ticks: { stepSize: 2, display: false }, // Cleaner look
+                        ticks: { stepSize: 2, display: false },
                         grid: { color: '#e9ecef' },
                         angleLines: { color: '#e9ecef' },
                         pointLabels: {
