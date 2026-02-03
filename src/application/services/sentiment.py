@@ -134,9 +134,5 @@ class SentimentAnalysisService:
                 continue
 
         if changes_count > 0:
-            try:
-                db.session.commit()
-                logger.info(f"AI: Analyzed Response {response_id}. Saved {changes_count} sentiments.")
-            except SQLAlchemyError as db_err:
-                db.session.rollback()
-                logger.error(f"AI: Database commit failed for Response {response_id}: {db_err}")
+            db.session.flush()
+            logger.info(f"AI: Analyzed Response {response_id}. Staged {changes_count} sentiments.")

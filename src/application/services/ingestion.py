@@ -203,7 +203,7 @@ class IngestionService:
                         skipped_count += 1
                         continue
 
-                    # FIX: Check for text changes BEFORE updating the object!
+                    # Check for text changes BEFORE updating the object!
                     text_changed = IngestionService._has_text_changes(existing_response, resp_dto)
 
                     # Now update the object in memory
