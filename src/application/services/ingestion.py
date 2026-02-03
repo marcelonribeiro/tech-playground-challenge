@@ -51,6 +51,8 @@ class IngestionService:
             stats.update(ai_stats)
             stats['processed'] = stats['created'] + stats['updated']
 
+            db.session.commit()
+
             logger.info(f"✅ [Pipeline] Finished. Stats: {stats}")
             return stats
 
@@ -129,7 +131,6 @@ class IngestionService:
                     emp_cache[emp_dto.email] = employee
             except Exception:
                 continue
-        db.session.commit()
 
     @staticmethod
     def _process_surveys(df: pd.DataFrame):
@@ -151,7 +152,6 @@ class IngestionService:
             except Exception:
                 # Skip invalid rows
                 continue
-        db.session.commit()
 
     @staticmethod
     def _process_responses_and_ai(df: pd.DataFrame) -> dict:
@@ -232,16 +232,11 @@ class IngestionService:
 
                 processed_batch += 1
 
-                if processed_batch % 50 == 0:
-                    db.session.commit()
-                    logger.info(f"   -> Processed batch {processed_batch}...")
-
             except Exception as e:
                 errors_count += 1
                 logger.warning(f"   -> Error on row {index}: {e}")
                 continue
 
-        db.session.commit()
         return {
             "created": created_count,
             "updated": updated_count,
